@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import Logo from './Logo';
 import PopButton from './PopButton';
-import { analyzeLeadsData } from '../services/geminiService';
+
 import { 
   PriceRange, 
   SalesClosingMethod, 
@@ -404,9 +404,27 @@ const InternalDashboard: React.FC = () => {
                         return;
                       }
                       setLoading(true);
-                      const res = await analyzeLeadsData(JSON.stringify(leads));
-                      setAiInsights(res);
-                      setLoading(false);
+                      try {
+                        const r = await fetch('/api/analyze-leads', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ leads })
+                        });
+                        if (!r.ok) {
+                          const err = await r.text();
+                          console.error('AI API error:', err);
+                          alert('AI analysis failed. Check console for details.');
+                          setLoading(false);
+                          return;
+                        }
+                        const data = await r.json();
+                        setAiInsights(data);
+                      } catch (err) {
+                        console.error('Failed to call AI analysis:', err);
+                        alert('AI analysis failed. Check console for details.');
+                      } finally {
+                        setLoading(false);
+                      }
                     }}
                     className="bg-[#001e4d] text-white px-12 py-5 rounded-2xl font-black uppercase tracking-widest text-xs shadow-2xl"
                   >
