@@ -1,0 +1,13 @@
+/* index.css - Minimal placeholder to avoid 404.
+   Replace with your compiled Tailwind output or actual styles for production.
+*/
+
+:root {
+  --primary-blue: #003c95;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  background: #f8fafc;
+}

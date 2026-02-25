@@ -1,0 +1,8 @@
+{
+  "name": "Summit Connect - Premier Outsourcing Solutions",
+  "description": "An Extension of Your Team. Connecting local talent to global opportunities through high-performance call center and virtual assistant solutions.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
