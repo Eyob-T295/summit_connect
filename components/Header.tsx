@@ -1,14 +1,25 @@
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import PopButton from './PopButton';
 import Logo from './Logo';
 
-const Header: React.FC = () => {
+interface NavItem {
+  name: string;
+  href: string;
+  icon: React.ReactNode;
+  onClick?: (e: React.MouseEvent) => void;
+}
+
+interface HeaderProps {
+  onApplyClick: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onApplyClick }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
 
-  const navItems = [
+  const navItems: NavItem[] = [
     { 
       name: 'Home', 
       href: '#/',
@@ -44,6 +55,19 @@ const Header: React.FC = () => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       )
+    },
+    { 
+      name: 'Careers', 
+      href: '#careers',
+      onClick: (e: React.MouseEvent) => {
+        e.preventDefault();
+        onApplyClick();
+      },
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+      )
     }
   ];
 
@@ -66,7 +90,14 @@ const Header: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleNavClick = (e: React.MouseEvent, href: string) => {
+  const handleNavClick = (e: React.MouseEvent, item: NavItem) => {
+    if (item.onClick) {
+      item.onClick(e);
+      setIsMenuOpen(false);
+      return;
+    }
+
+    const href = item.href;
     if (href.startsWith('#/')) {
       if (href === '#/') {
         e.preventDefault();
@@ -99,10 +130,10 @@ const Header: React.FC = () => {
         {/* Logo */}
         <a 
           href="#/" 
-          onClick={(e) => handleNavClick(e, '#/')} 
+          onClick={(e) => handleNavClick(e, { name: 'Home', href: '#/', icon: null })} 
           className="transition-all duration-500 hover:scale-105 active:scale-95 z-[110]"
         >
-          <Logo isScrolled={true} className="scale-75 md:scale-90 origin-left" />
+          <Logo className="scale-75 md:scale-90 origin-left" />
         </a>
 
         {/* Desktop Nav */}
@@ -115,7 +146,7 @@ const Header: React.FC = () => {
               <a
                 key={item.name}
                 href={item.href}
-                onClick={(e) => handleNavClick(e, item.href)}
+                onClick={(e) => handleNavClick(e, item)}
                 className={`flex items-center gap-2.5 text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500 relative py-2 group ${
                   isActive ? 'text-white' : 'text-white/50 hover:text-white'
                 }`}
@@ -138,7 +169,6 @@ const Header: React.FC = () => {
           <PopButton
             onClick={() => window.location.hash = '#/booking'}
             className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-[#003c95] text-white hover:bg-blue-600 hover:shadow-[0_0_40px_rgba(0,60,149,0.4)] border border-white/10"
-            showArrow={false}
           >
             Get Your Strategy call <span className="ml-2 text-xs opacity-70">→</span>
           </PopButton>
@@ -168,7 +198,7 @@ const Header: React.FC = () => {
             <a
               key={item.name}
               href={item.href}
-              onClick={(e) => handleNavClick(e, item.href)}
+              onClick={(e) => handleNavClick(e, item)}
               className={`flex items-center gap-4 text-3xl font-black text-white uppercase tracking-tighter transition-all duration-500 transform ${
                 isMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
               }`}
@@ -183,7 +213,6 @@ const Header: React.FC = () => {
             <PopButton
               onClick={() => { window.location.hash = '#/booking'; setIsMenuOpen(false); }}
               className="mt-6 px-8 py-5 bg-white text-[#0B1F3A] rounded-2xl text-lg font-black uppercase tracking-widest w-full shadow-2xl"
-              showArrow={false}
             >
               Book A call <span className="ml-2">→</span>
             </PopButton>

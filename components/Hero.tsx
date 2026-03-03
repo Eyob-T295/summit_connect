@@ -9,7 +9,6 @@ const ROTATING_TEXTS = [
 ];
 
 const Hero: React.FC = () => {
-  const [hasStarted, setHasStarted] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const [textIndex, setTextIndex] = useState(0);
   const [fade, setFade] = useState(true);
@@ -18,7 +17,6 @@ const Hero: React.FC = () => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
-    const timer = setTimeout(() => setHasStarted(true), 100);
     const handleScroll = () => {
       setScrollY(window.scrollY);
     };
@@ -40,18 +38,11 @@ const Hero: React.FC = () => {
     }, 4000);
 
     return () => {
-      clearTimeout(timer);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('mousemove', handleMouseMove);
       clearInterval(interval);
     };
   }, []);
-
-  const scrollToServices = (e: React.MouseEvent) => {
-    e.preventDefault();
-    const el = document.getElementById('failure-analysis');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
-  };
 
   return (
     <section id="home" className="relative min-h-screen flex items-center pt-24 pb-16 lg:pt-32 lg:pb-32 overflow-hidden bg-black">
@@ -82,7 +73,7 @@ const Hero: React.FC = () => {
         >
           <div className="scroll-reveal reveal-left stagger-1 inline-flex items-center gap-4 px-5 py-1.5 rounded-sm bg-blue-600/20 border-l-2 border-blue-500 text-blue-400 text-[10px] font-black uppercase tracking-[0.6em] mb-12 backdrop-blur-md">
             <span className="flex h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse"></span>
-            Strategic Operations Command
+            Competitive costs without sacrificing quality
           </div>
 
           <h1 className="scroll-reveal reveal-left stagger-2 text-4xl md:text-6xl font-bold text-white mb-8 tracking-tight leading-tight animate-float-gentle">
@@ -122,8 +113,7 @@ const Hero: React.FC = () => {
               onClick={() => window.location.hash = '#/booking'}
               className="w-full sm:w-auto px-14 py-6 text-xs font-black text-white bg-gradient-to-r from-blue-700 to-blue-600 rounded-xl hover:from-blue-600 hover:to-blue-500 shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:shadow-[0_0_40px_rgba(37,99,235,0.6)] hover:-translate-y-1 transition-all duration-300 uppercase tracking-[0.2em] border border-blue-500/30"
             >
-              <svg className="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform duration-300" fill="currentColor" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" /></svg>
-              Book a Strategy Call
+              <svg className="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform duration-300" fill="currentColor" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" /></svg> Book a call Strategy
             </PopButton>
             <button
               onClick={() => setShowFullscreen(true)}

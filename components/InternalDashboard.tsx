@@ -11,6 +11,7 @@ import {
   LeadGenMethod,
   LeadStatus
 } from '../types';
+import { Eye, EyeOff, Search, Calendar, X, ChevronRight, Play, AlertCircle, Trash } from 'lucide-react';
 
 interface LeadRecord {
   id: string;
@@ -31,31 +32,86 @@ interface LeadRecord {
   genMethods: LeadGenMethod[];
 }
 
+interface JobApplication {
+  id: string;
+  fullName: string;
+  phone: string;
+  email: string;
+  experience: string;
+  usHours: string;
+  education: string;
+  challenge: string;
+  submittedAt: string;
+  file?: {
+    name: string;
+    size: number;
+    type: string;
+    url?: string;
+    tooLarge?: boolean;
+  };
+  status?: 'pending' | 'accepted' | 'rejected';
+}
+
 const InternalDashboard: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [activeTab, setActiveTab] = useState<'bookings' | 'performance' | 'calendar' | 'intelligence'>('bookings');
+  type DashboardTab = 'bookings' | 'performance' | 'calendar' | 'intelligence' | 'careers';
+  const [activeTab, setActiveTab] = useState<DashboardTab>('bookings');
   const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null);
+  const [selectedApp, setSelectedApp] = useState<JobApplication | null>(null);
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [aiInsights, setAiInsights] = useState<any>(null);
+  const [aiInsights, setAiInsights] = useState<{ summary: string; actionableSteps: string[] } | null>(null);
   const [leads, setLeads] = useState<LeadRecord[]>([]);
+  const [jobApps, setJobApps] = useState<JobApplication[]>([]);
+  const [leadSearch, setLeadSearch] = useState('');
+  const [appSearch, setAppSearch] = useState('');
 
-  // Load leads from localStorage on mount
+  // Load leads and job apps from localStorage on mount
   useEffect(() => {
-    const fetchLeads = () => {
+    const fetchData = () => {
       try {
         const savedLeads = JSON.parse(localStorage.getItem('summit_leads') || '[]');
-        setLeads(savedLeads);
+        setLeads(Array.isArray(savedLeads) ? savedLeads : []);
+        const savedApps = JSON.parse(localStorage.getItem('summit_job_apps') || '[]');
+        // ensure every application has a status
+        const normalizedApps: JobApplication[] = (Array.isArray(savedApps) ? savedApps : []).map((a: any) => ({
+          status: 'pending' as const,
+          ...a,
+        }));
+        setJobApps(normalizedApps);
       } catch (e) {
-        console.error("Failed to fetch leads from local storage", e);
+        console.error("Failed to fetch data from local storage", e);
       }
     };
 
-    fetchLeads();
+    fetchData();
     // Listen for storage changes in case booking happens in another tab
-    window.addEventListener('storage', fetchLeads);
-    return () => window.removeEventListener('storage', fetchLeads);
+    window.addEventListener('storage', fetchData);
+    return () => window.removeEventListener('storage', fetchData);
   }, []);
+
+  const filteredLeads = useMemo(() => {
+    if (!leadSearch) return leads;
+    const term = leadSearch.toLowerCase();
+    return leads.filter(l => 
+      (l.name?.toLowerCase() || '').includes(term) || 
+      (l.email?.toLowerCase() || '').includes(term) || 
+      (l.phone || '').includes(term) ||
+      (l.owner?.toLowerCase() || '').includes(term)
+    );
+  }, [leads, leadSearch]);
+
+  const filteredApps = useMemo(() => {
+    if (!appSearch) return jobApps;
+    const term = appSearch.toLowerCase();
+    return jobApps.filter(a => 
+      (a.fullName?.toLowerCase() || '').includes(term) || 
+      (a.email?.toLowerCase() || '').includes(term) || 
+      (a.phone || '').includes(term) ||
+      (a.experience?.toLowerCase() || '').includes(term)
+    );
+  }, [jobApps, appSearch]);
 
   const stats = useMemo(() => {
     const total = leads.length;
@@ -98,6 +154,18 @@ const InternalDashboard: React.FC = () => {
     }
   };
 
+  const clearJobApps = () => {
+    if (confirm("Are you sure you want to clear ALL applicants data? This will delete every application stored localy.\n\nPress OK to continue or Cancel to abort.")) {
+      localStorage.removeItem('summit_job_apps');
+      // also clear any object URLs from sessionStorage
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.startsWith('summit_job_app_file_')) sessionStorage.removeItem(key);
+      });
+      setJobApps([]);
+      setSelectedApp(null);
+    }
+  };
+
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-6">
@@ -125,14 +193,23 @@ const InternalDashboard: React.FC = () => {
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Security Key</label>
-              <input 
-                type="password" 
-                required
-                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 outline-none focus:border-[#001e4d] font-bold transition-all"
-                placeholder="••••••••"
-                value={loginForm.password}
-                onChange={e => setLoginForm({...loginForm, password: e.target.value})}
-              />
+              <div className="relative">
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  required
+                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 outline-none focus:border-[#001e4d] font-bold transition-all pr-14"
+                  placeholder="••••••••"
+                  value={loginForm.password}
+                  onChange={e => setLoginForm({...loginForm, password: e.target.value})}
+                />
+                <button 
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
             </div>
             <PopButton 
               type="submit" 
@@ -162,15 +239,17 @@ const InternalDashboard: React.FC = () => {
         
         <nav className="flex-grow mt-10 px-4 space-y-2">
           {[
-            { id: 'bookings', label: 'Bookings Registry', icon: 'clipboard' }
+            { id: 'bookings', label: 'Bookings Registry', icon: 'clipboard' },
+            { id: 'careers', label: 'Careers Registry', icon: 'users' }
           ].map(tab => (
             <button 
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as DashboardTab)}
               className={`w-full flex items-center gap-4 p-4 rounded-xl transition-all ${activeTab === tab.id ? 'bg-white/10 text-white shadow-lg' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
             >
               <div className="w-6 h-6 flex items-center justify-center">
                 {tab.id === 'bookings' && <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>}
+                {tab.id === 'careers' && <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
                 {tab.id === 'calendar' && <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2v12a2 2 0 002 2z"/></svg>}
                 {tab.id === 'performance' && <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>}
                 {tab.id === 'intelligence' && <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>}
@@ -201,20 +280,17 @@ const InternalDashboard: React.FC = () => {
         {/* Layer 1: At-a-glance Summary Bar */}
         <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div>
-            <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">Operations Control</h2>
+            <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">Dashboard</h2>
             <p className="text-slate-400 text-[10px] font-bold tracking-[0.4em] uppercase mt-1">Total leads registered: {leads.length}</p>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 w-full lg:w-auto">
+          <div className="grid grid-cols-2 gap-3 w-full lg:w-auto">
             {[
               { label: 'New Today', val: stats.newAudits, color: 'text-blue-600', bg: 'bg-white' },
-              { label: 'Booked (48h)', val: stats.callsBooked, color: 'text-green-600', bg: 'bg-white' },
-              { label: 'At Risk', val: stats.atRisk, color: 'text-red-600', bg: 'bg-white' },
-              { label: 'Qualified', val: `${stats.qualifiedPercent}%`, color: 'text-[#001e4d]', bg: 'bg-white' },
-              { label: 'Rev Est.', val: stats.revenuePotential, color: 'text-purple-600', bg: 'bg-white' }
+              { label: 'Booked (48h)', val: stats.callsBooked, color: 'text-green-600', bg: 'bg-white' }
             ].map((stat, i) => (
-              <div key={i} className={`px-4 py-3 rounded-2xl border border-slate-200 shadow-sm ${stat.bg} flex flex-col justify-center min-w-[100px]`}>
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5 whitespace-nowrap">{stat.label}</p>
-                <p className={`text-lg font-black ${stat.color}`}>{stat.val}</p>
+              <div key={i} className={`px-6 py-4 rounded-2xl border border-slate-200 shadow-sm ${stat.bg} flex flex-col justify-center min-w-[140px]`}>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 whitespace-nowrap">{stat.label}</p>
+                <p className={`text-2xl font-black ${stat.color}`}>{stat.val}</p>
               </div>
             ))}
           </div>
@@ -225,9 +301,18 @@ const InternalDashboard: React.FC = () => {
           {activeTab === 'bookings' && (
             <div className="bg-white rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden">
               <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50/30">
-                <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Active Pipeline Registry</h3>
+                <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Active Booking Registry</h3>
                 <div className="flex gap-2 w-full md:w-auto">
-                  <input type="text" placeholder="Search leads..." className="flex-grow md:w-64 px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-bold outline-none focus:border-[#001e4d] shadow-sm" />
+                  <div className="relative flex-grow md:w-64">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                    <input 
+                      type="text" 
+                      placeholder="Search leads..." 
+                      className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-bold outline-none focus:border-[#001e4d] shadow-sm" 
+                      value={leadSearch}
+                      onChange={e => setLeadSearch(e.target.value)}
+                    />
+                  </div>
                   <button className="px-4 py-2 bg-[#001e4d] text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Filter</button>
                 </div>
               </div>
@@ -246,26 +331,25 @@ const InternalDashboard: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
-                    {leads.length === 0 ? (
+                    {filteredLeads.length === 0 ? (
                       <tr>
                         <td colSpan={8} className="px-6 py-20 text-center">
-                          <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">No leads currently registered in the database.</p>
-                          <p className="text-slate-300 text-[9px] mt-2">Submit a form through the public audit page to see data here.</p>
+                          <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">No leads matching your search.</p>
                         </td>
                       </tr>
                     ) : (
-                      leads.map(lead => (
+                      filteredLeads.map(lead => (
                         <tr 
                           key={lead.id} 
                           onClick={() => setSelectedLead(lead)}
                           className="hover:bg-slate-50 transition-all cursor-pointer group"
                         >
                           <td className="px-6 py-5">
-                            <p className="text-sm font-black text-slate-900 leading-none mb-1">{lead.name}</p>
-                            <p className="text-[9px] text-slate-400 font-medium">{lead.email}</p>
+                            <p className="text-sm font-black text-slate-900 leading-none mb-1">{lead.name || 'Unknown'}</p>
+                            <p className="text-[9px] text-slate-400 font-medium">{lead.email || 'No Email'}</p>
                           </td>
                           <td className="px-6 py-5">
-                            <span className="text-[10px] font-bold text-slate-600 bg-white border border-slate-200 px-2 py-1 rounded-lg shadow-sm">{lead.price}</span>
+                            <span className="text-[10px] font-bold text-slate-600 bg-white border border-slate-200 px-2 py-1 rounded-lg shadow-sm">{lead.price || 'N/A'}</span>
                           </td>
                           <td className="px-6 py-5">
                              <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-md border ${
@@ -277,13 +361,13 @@ const InternalDashboard: React.FC = () => {
                              </span>
                           </td>
                           <td className="px-6 py-5">
-                            <p className="text-[9px] font-bold text-slate-500 leading-tight max-w-[120px] line-clamp-2">{lead.breakdown}</p>
+                            <p className="text-[9px] font-bold text-slate-500 leading-tight max-w-[120px] line-clamp-2">{lead.breakdown || 'No breakdown'}</p>
                           </td>
                           <td className="px-6 py-5">
-                            <p className="text-[9px] font-black text-[#001e4d] uppercase truncate max-w-[80px]">{lead.flow.split(' ')[0]}</p>
+                            <p className="text-[9px] font-black text-[#001e4d] uppercase truncate max-w-[80px]">{(lead.flow || '').split(' ')[0] || 'N/A'}</p>
                           </td>
                           <td className="px-6 py-5">
-                             <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{lead.owner}</p>
+                             <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{lead.owner || 'Unassigned'}</p>
                           </td>
                           <td className="px-6 py-5">
                              <div className="flex items-center gap-2">
@@ -297,6 +381,114 @@ const InternalDashboard: React.FC = () => {
                           </td>
                           <td className="px-6 py-5 text-right">
                             <button className="text-[#001e4d] font-black text-[9px] uppercase tracking-widest hover:underline opacity-0 group-hover:opacity-100 transition-all">Audit Lead</button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'careers' && (
+            <div className="bg-white rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden">
+              <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50/30">
+                <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Recruitment Registry</h3>
+                <div className="flex gap-2 w-full md:w-auto">
+                  <div className="relative flex-grow md:w-64">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                    <input 
+                      type="text" 
+                      placeholder="Search applicants..." 
+                      className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-bold outline-none focus:border-[#001e4d] shadow-sm" 
+                      value={appSearch}
+                      onChange={e => setAppSearch(e.target.value)}
+                    />
+                  </div>
+                  <button
+                    onClick={clearJobApps}
+                    title="Clear all applications"
+                    className="px-4 py-2 bg-red-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-colors flex items-center gap-2"
+                  >
+                    <Trash size={14} />
+                    Clear Applications
+                  </button>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-slate-50/50 text-slate-400 text-[8px] font-black uppercase tracking-widest border-b border-slate-100">
+                    <tr>
+                      <th className="px-6 py-4">Applicant</th>
+                      <th className="px-6 py-4">Contact</th>
+                      <th className="px-6 py-4">U.S. Hours</th>
+                      <th className="px-6 py-4">Education</th>
+                      <th className="px-6 py-4">Submitted At</th>
+                      <th className="px-6 py-4">Status</th>
+                      <th className="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {filteredApps.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-24 text-center">
+                          <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">No applications matching your search.</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredApps.map((app) => (
+                        <tr 
+                          key={app.id} 
+                          onClick={() => setSelectedApp(app)}
+                          className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
+                        >
+                          <td className="px-6 py-6">
+                            <p className="text-sm font-black text-slate-900">{app.fullName}</p>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest truncate max-w-[200px]">{app.experience}</p>
+                          </td>
+                          <td className="px-6 py-6">
+                            <p className="text-xs font-bold text-slate-600">{app.email}</p>
+                            <p className="text-[10px] text-slate-400 font-bold">{app.phone}</p>
+                          </td>
+                          <td className="px-6 py-6">
+                            <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${app.usHours === 'Yes' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                              {app.usHours}
+                            </span>
+                          </td>
+                          <td className="px-6 py-6">
+                            <p className="text-xs font-bold text-slate-600">{app.education || 'N/A'}</p>
+                          </td>
+                          <td className="px-6 py-6">
+                            <p className="text-xs font-bold text-slate-600">{new Date(app.submittedAt).toLocaleDateString()}</p>
+                          </td>
+                          <td className="px-6 py-6">
+                            <span className={`px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${
+                              app.status === 'accepted' ? 'bg-green-100 text-green-700' :
+                              app.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                              'bg-slate-100 text-slate-600'
+                            }`}>{app.status || 'pending'}</span>
+                          </td>
+                          <td className="px-6 py-6 text-right">
+                                <div className="flex justify-end items-center gap-2">
+                                  <button className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                                    Details <ChevronRight size={12} />
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (confirm('Delete this application?')) {
+                                        const remaining = jobApps.filter(j => j.id !== app.id);
+                                        setJobApps(remaining);
+                                        localStorage.setItem('summit_job_apps', JSON.stringify(remaining));
+                                      }
+                                    }}
+                                    className="text-red-500 hover:text-red-700 p-1"
+                                    title="Delete application"
+                                  >
+                                    <Trash size={14} />
+                                  </button>
+                                </div>
                           </td>
                         </tr>
                       ))
@@ -615,6 +807,176 @@ const InternalDashboard: React.FC = () => {
                   Mark No-Show
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Layer 3: Applicant Detail Drawer */}
+      {selectedApp && (
+        <div className="fixed inset-0 z-[100] flex justify-end">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setSelectedApp(null)}></div>
+          <div className="relative w-full max-w-xl bg-white h-full shadow-[-20px_0_60px_rgba(0,0,0,0.2)] flex flex-col animate-slide-left border-l border-slate-100">
+            <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <span className={`text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${
+                    selectedApp.usHours === 'Yes' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'
+                  }`}>
+                    {selectedApp.usHours === 'Yes' ? 'U.S. Hours Compatible' : 'Non-U.S. Hours'}
+                  </span>
+                </div>
+                <h3 className="text-3xl font-black text-slate-900 tracking-tighter">{selectedApp.fullName}</h3>
+                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Applicant ID: {selectedApp.id}</p>
+              </div>
+              <button onClick={() => setSelectedApp(null)} className="p-4 rounded-full bg-white shadow-sm border border-slate-100 hover:bg-slate-50 transition-all">
+                <X size={20} className="text-slate-400" />
+              </button>
+            </div>
+
+            <div className="flex-grow p-10 overflow-y-auto space-y-12">
+               <section>
+                 <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] mb-6">Contact Information</h4>
+                 <div className="grid grid-cols-2 gap-8">
+                    <div className="space-y-1">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Email Address</p>
+                      <p className="text-sm font-bold text-slate-900">{selectedApp.email}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Phone Number</p>
+                      <p className="text-sm font-bold text-slate-900">{selectedApp.phone}</p>
+                    </div>
+                 </div>
+               </section>
+
+               <section>
+                 <h4 className="text-[10px] font-black text-[#001e4d] uppercase tracking-[0.4em] mb-6">Professional Profile</h4>
+                 <div className="space-y-6">
+                    <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Experience Summary</p>
+                      <p className="text-sm font-medium text-slate-700 leading-relaxed">{selectedApp.experience}</p>
+                    </div>
+                    <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Education</p>
+                      <p className="text-sm font-medium text-slate-700 leading-relaxed">{selectedApp.education || 'Not specified'}</p>
+                    </div>
+                    <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Personal Challenge Response</p>
+                      <p className="text-sm font-medium text-slate-700 leading-relaxed italic">"{selectedApp.challenge}"</p>
+                    </div>
+                 </div>
+               </section>
+
+               {selectedApp.file && (
+                 <section>
+                   <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.4em] mb-6">Uploaded Assets</h4>
+                   <div className="space-y-4">
+                     <div className="p-6 bg-blue-50/50 border border-blue-100 rounded-2xl flex items-center justify-between">
+                       <div className="flex items-center gap-4">
+                         <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center border border-blue-100 shadow-sm">
+                           <Play size={20} className="text-blue-600" />
+                         </div>
+                         <div>
+                           <p className="text-sm font-black text-slate-900">{selectedApp.file.name}</p>
+                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{(selectedApp.file.size / (1024 * 1024)).toFixed(2)} MB • {selectedApp.file.type}</p>
+                         </div>
+                       </div>
+                       {(() => {
+                         const previewUrl = selectedApp.file.url || sessionStorage.getItem(`summit_job_app_file_${selectedApp.id}`);
+                         return previewUrl ? (
+                           <a 
+                             href={previewUrl} 
+                             download={selectedApp.file.name}
+                             className="px-4 py-2 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20"
+                           >
+                             Download
+                           </a>
+                         ) : null;
+                       })()}
+                     </div>
+                     
+                     {(() => {
+                       const previewUrl = selectedApp.file.url || sessionStorage.getItem(`summit_job_app_file_${selectedApp.id}`);
+                       if (!previewUrl) return null;
+                       return (
+                         <div className="rounded-2xl overflow-hidden border border-slate-200 bg-black aspect-video flex items-center justify-center">
+                           {selectedApp.file.type.startsWith('video/') ? (
+                             <video 
+                               src={previewUrl} 
+                               controls 
+                               className="w-full h-full"
+                             />
+                           ) : selectedApp.file.type.startsWith('audio/') ? (
+                             <audio 
+                               src={previewUrl} 
+                               controls 
+                               className="w-full px-4"
+                             />
+                           ) : (
+                             <p className="text-white text-[10px] font-black uppercase tracking-widest">Preview not available for this type</p>
+                           )}
+                         </div>
+                       );
+                     })()}
+                     
+                     {selectedApp.file.tooLarge && (
+                       <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl flex items-center gap-3">
+                         <AlertCircle size={16} className="text-amber-600" />
+                         <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest">File too large for in-app preview (Max 2MB)</p>
+                       </div>
+                     )}
+                   </div>
+                 </section>
+               )}
+
+               <section>
+                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-6">Submission Details</h4>
+                 <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4">
+                   <Calendar size={16} className="text-slate-400" />
+                   <p className="text-xs font-bold text-slate-600">Applied on {new Date(selectedApp.submittedAt).toLocaleString()}</p>
+                 </div>
+               </section>
+            </div>
+
+            <div className="p-8 border-t border-slate-100 bg-slate-50/50 flex gap-4">
+                 <button
+                   onClick={() => {
+                     if (!selectedApp) return;
+                    const updated = jobApps.map(j => j.id === selectedApp.id ? { ...j, status: 'accepted' as const } : j);
+                     setJobApps(updated);
+                     localStorage.setItem('summit_job_apps', JSON.stringify(updated));
+                     setSelectedApp({ ...selectedApp, status: 'accepted' });
+                   }}
+                   className="flex-grow py-4 bg-green-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-green-700 transition-colors"
+                 >
+                   Accept Application
+                 </button>
+                 <button
+                   onClick={() => {
+                     if (!selectedApp) return;
+                     const updated = jobApps.map(j => j.id === selectedApp.id ? { ...j, status: 'rejected' as const } : j);
+                     setJobApps(updated);
+                     localStorage.setItem('summit_job_apps', JSON.stringify(updated));
+                     setSelectedApp({ ...selectedApp, status: 'rejected' });
+                   }}
+                   className="flex-grow py-4 bg-red-500 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:bg-red-600 transition-colors"
+                 >
+                   Reject Application
+                 </button>
+                 <button
+                   onClick={() => {
+                     if (!selectedApp) return;
+                     if (confirm('Delete this application?')) {
+                       const remaining = jobApps.filter(j => j.id !== selectedApp.id);
+                       setJobApps(remaining);
+                       localStorage.setItem('summit_job_apps', JSON.stringify(remaining));
+                       setSelectedApp(null);
+                     }
+                   }}
+                   className="flex-grow py-4 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors"
+                 >
+                   Delete Application
+                 </button>
             </div>
           </div>
         </div>

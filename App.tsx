@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import MissionStatement from './components/MissionStatement';
@@ -10,6 +9,7 @@ import PartnershipValue from './components/PartnershipValue';
 import Booking from './components/Booking';
 import Footer from './components/Footer';
 import InternalDashboard from './components/InternalDashboard';
+import Careers from './components/Careers';
 
 const App: React.FC = () => {
   const getNormalizedPath = () => {
@@ -19,6 +19,7 @@ const App: React.FC = () => {
   };
 
   const [currentPath, setCurrentPath] = useState(getNormalizedPath());
+  const [isCareersOpen, setIsCareersOpen] = useState(false);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -44,7 +45,6 @@ const App: React.FC = () => {
         if (entry.isIntersecting) {
           entry.target.classList.add('active');
         } else {
-          // Removes class when element scrolls out of view to re-trigger animation
           entry.target.classList.remove('active');
         }
       });
@@ -65,7 +65,7 @@ const App: React.FC = () => {
   const renderContent = () => {
     if (currentPath === '#/booking') {
       return (
-        <div className="pt-24 min-h-[80vh] animate-reveal">
+        <div className="pt-24 min-h-[80vh] animate-reveal bg-white">
           <div className="max-w-7xl mx-auto px-6 py-12">
              <button 
               onClick={() => window.location.hash = '#/'}
@@ -116,9 +116,10 @@ const App: React.FC = () => {
 
   return (
     <div className={`min-h-screen ${currentPath === '#/internal' ? 'bg-[#001e4d]' : 'bg-white'}`}>
-      {currentPath !== '#/internal' && <Header />}
+      {currentPath !== '#/internal' && <Header onApplyClick={() => setIsCareersOpen(true)} />}
       {renderContent()}
       {currentPath !== '#/internal' && <Footer />}
+      <Careers isOpen={isCareersOpen} onClose={() => setIsCareersOpen(false)} />
     </div>
   );
 };
