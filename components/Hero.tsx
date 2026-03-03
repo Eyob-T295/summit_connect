@@ -58,7 +58,7 @@ const Hero: React.FC = () => {
       {/* Background Video Layer */}
       <div className="absolute inset-0 z-0 overflow-hidden">
         <video
-          src="Summitconnect_video.mp4"
+          src="Promo Vid Summitconnect.mp4"
           autoPlay
           loop
           muted
@@ -153,7 +153,7 @@ const Hero: React.FC = () => {
           </button>
           <div className="w-full h-full max-w-7xl max-h-[90vh] px-6 flex items-center justify-center">
             <video
-              src="Summitconnect_video.mp4"
+              src="Promo Vid Summitconnect.mp4"
               autoPlay
               controls
               className="w-full h-full object-contain shadow-[0_0_150px_rgba(0,0,0,0.9)] border border-white/5"
