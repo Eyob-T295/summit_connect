@@ -377,8 +377,8 @@ const Booking: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-1 gap-3">
                   {Object.values(SettingBreakdown).map(v => (
-                    <button key={v} type="button" onClick={() => setForm({...form, breakdowns: toggleArrayItem(form.breakdowns, v)})} className={`flex items-center gap-4 py-4 px-6 rounded-2xl font-black text-[10px] uppercase tracking-widest border-2 transition-all text-left ${form.breakdowns.includes(v) ? 'border-red-200 bg-red-50 text-red-600' : 'border-slate-50 bg-slate-50 text-slate-400'}`}>
-                      <div className={`w-4 h-4 rounded-full border-2 shrink-0 ${form.breakdowns.includes(v) ? 'bg-red-500 border-red-500' : 'border-slate-300'}`}></div>
+                    <button key={v} type="button" onClick={() => setForm({...form, breakdowns: toggleArrayItem(form.breakdowns, v)})} className={`flex items-center gap-4 py-4 px-6 rounded-2xl font-black text-[10px] uppercase tracking-widest border-2 transition-all text-left ${form.breakdowns.includes(v) ? 'border-[#003c95] text-[#003c95] bg-blue-50/50' : 'border-slate-50 bg-slate-50 text-slate-400'}`}>
+                      <div className={`w-4 h-4 rounded-full border-2 shrink-0 ${form.breakdowns.includes(v) ? 'bg-[#003c95] border-[#003c95]' : 'border-slate-300'}`}></div>
                       {v}
                     </button>
                   ))}
@@ -472,7 +472,7 @@ const Booking: React.FC = () => {
 
                 <div className="flex flex-col items-center gap-8">
                   {errors.length > 0 && <div className="text-red-500 text-xs font-bold uppercase tracking-widest">Complete all required fields</div>}
-                  <PopButton type="submit" className={`w-full md:w-auto px-16 py-6 bg-[#003c95] text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-2xl ${submitting ? 'opacity-50' : ''}`}>
+                  <PopButton type="submit" className={`w-full md:w-auto px-8 py-4 md:px-16 md:py-6 bg-[#003c95] text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-2xl animate-pulse-gentle ${submitting ? 'opacity-50' : ''}`}>
                     {submitting ? 'Authenticating...' : 'Proceed to Booking'}
                   </PopButton>
                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center">Your information is encrypted and only used for meeting preparation.</p>
@@ -550,7 +550,7 @@ const Booking: React.FC = () => {
 
                 <PopButton 
                   onClick={handleFinalBooking}
-                  className={`w-full md:w-auto px-16 py-7 bg-white text-[#001e4d] rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-2xl transition-all ${(!selectedTime || submitting) ? 'opacity-40 grayscale cursor-not-allowed' : 'hover:scale-105 hover:bg-blue-50'}`}
+                  className={`w-full md:w-auto px-8 py-4 md:px-16 md:py-7 bg-white text-[#001e4d] rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-2xl transition-all ${(!selectedTime || submitting) ? 'opacity-40 grayscale cursor-not-allowed' : 'hover:scale-105 hover:bg-blue-50'}`}
                   showArrow={false}
                 >
                   {submitting ? 'Confirming...' : 'Confirm Deployment'} <span className="ml-3">→</span>
@@ -584,7 +584,7 @@ const Booking: React.FC = () => {
                 <div className="flex flex-col md:flex-row items-center justify-center gap-4">
                    <PopButton 
                      onClick={handleReturnToHQ}
-                     className="px-16 py-6 bg-[#001e4d] text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-2xl"
+                     className="px-8 py-4 md:px-16 md:py-6 bg-[#001e4d] text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-2xl"
                    >
                      Return to HQ
                    </PopButton>
@@ -605,6 +605,9 @@ const Booking: React.FC = () => {
         .animate-reveal { animation: reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes bounce-short { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
         .animate-bounce-short { animation: bounce-short 2s infinite ease-in-out; }
+        @keyframes pulse-gentle { 0%, 100% { transform: scale(1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); } 50% { transform: scale(1.02); box-shadow: 0 35px 60px -15px rgba(0, 60, 149, 0.3); } }
+        .animate-pulse-gentle { animation: pulse-gentle 3s infinite ease-in-out; }
+        .animate-pulse-gentle:hover { animation-play-state: paused; }
         select::-webkit-scrollbar { width: 6px; }
         select::-webkit-scrollbar-track { background: transparent; }
         select::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
