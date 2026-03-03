@@ -181,7 +181,7 @@ const InternalDashboard: React.FC = () => {
           </div>
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Access ID</label>
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Access User</label>
               <input 
                 type="text" 
                 required
