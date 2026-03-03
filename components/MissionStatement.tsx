@@ -8,7 +8,7 @@ const MissionStatement: React.FC = () => {
         <div className="text-center mb-24 scroll-reveal reveal-bottom">
           <span className="text-red-500 font-black text-xs uppercase tracking-[0.5em] mb-4 block">The Operational Gap</span>
           <h2 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-tight">
-            WHY TRADITIONAL <br /> <span className="text-slate-400">OFFSHORE FAILS / LOCAL HIRE</span>
+            WHY TRADITIONAL <br /> <span className="text-slate-400">OFFSHORE FAILS / LOCAL HIRING</span>
           </h2>
           <p className="text-slate-500 max-w-2xl mx-auto mt-6 text-lg font-medium">
             Most businesses view outsourcing as a cost-saving measure. We view it as a high-performance offensive strategy. Here is why the old models are broken.
