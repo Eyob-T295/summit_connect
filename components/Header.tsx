@@ -170,7 +170,7 @@ const Header: React.FC<HeaderProps> = ({ onApplyClick }) => {
             onClick={() => window.location.hash = '#/booking'}
             className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-[#003c95] text-white hover:bg-blue-600 hover:shadow-[0_0_40px_rgba(0,60,149,0.4)] border border-white/10"
           >
-            Get Your Strategy call <span className="ml-2 text-xs opacity-70">→</span>
+            Get Your Strategy call <span className="ml-2 text-xs opacity-70"></span>
           </PopButton>
         </div>
 
